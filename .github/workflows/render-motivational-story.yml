@@ -1,0 +1,66 @@
+name: Render motivational story video
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/motivational-story-remotion-20261118
+    paths:
+      - 'motivational-video/**'
+      - '.github/workflows/render-motivational-story.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng
+
+      - name: Install Remotion and narrator
+        working-directory: motivational-video
+        run: |
+          npm install --no-audit --no-fund
+          python -m pip install 'edge-tts>=6.1,<8'
+
+      - name: Generate narrated audio
+        working-directory: motivational-video
+        run: python scripts/voice.py
+
+      - name: Ensure Remotion browser
+        working-directory: motivational-video
+        run: npx remotion browser ensure
+
+      - name: Render 10-minute MP4
+        working-directory: motivational-video
+        run: npm run render
+
+      - name: Verify output duration
+        run: |
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 motivational-video/out/the-one-hour-promise.mp4
+
+      - name: Upload finished video
+        uses: actions/upload-artifact@v4
+        with:
+          name: the-one-hour-promise-10min
+          path: motivational-video/out/the-one-hour-promise.mp4
+          if-no-files-found: error
+          retention-days: 14
