@@ -1,7 +1,16 @@
-name: Render motivational story video
+name: Render 3D cinematic film
 
 on:
   workflow_dispatch:
+    inputs:
+      render_length:
+        description: 'Preview 12 seconds or complete 10-minute film'
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - full
   push:
     branches:
       - feature/motivational-story-remotion-20261118
@@ -12,55 +21,55 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cinematic-3d-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   render:
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 240
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install media dependencies
+      - name: Install rendering dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg espeak-ng
-
-      - name: Install Remotion and narrator
+          sudo apt-get install -y ffmpeg espeak-ng libgl1-mesa-dri libegl1 libgbm1 libnss3 libxkbcommon0 libasound2t64
+      - name: Install React 3D and Remotion
         working-directory: motivational-video
         run: |
           npm install --no-audit --no-fund
           python -m pip install 'edge-tts>=6.1,<8'
-
-      - name: Generate narrated audio
+      - name: Generate narrated dialogue
         working-directory: motivational-video
         run: python scripts/voice.py
-
-      - name: Ensure Remotion browser
+      - name: Install compatible Chromium
         working-directory: motivational-video
         run: npx remotion browser ensure
-
-      - name: Render 10-minute MP4
+      - name: Render animated cinematic preview
+        if: github.event_name == 'push' || inputs.render_length != 'full'
+        working-directory: motivational-video
+        run: npm run preview
+      - name: Render full ten-minute animated film
+        if: github.event_name == 'workflow_dispatch' && inputs.render_length == 'full'
         working-directory: motivational-video
         run: npm run render
-
-      - name: Verify output duration
+      - name: Inspect MP4 output
         run: |
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 motivational-video/out/the-one-hour-promise.mp4
-
-      - name: Upload finished video
+          find motivational-video/out -name '*.mp4' -type f -print
+          for video in motivational-video/out/*.mp4; do
+            ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 "$video"
+          done
+      - name: Upload MP4 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: the-one-hour-promise-10min
-          path: motivational-video/out/the-one-hour-promise.mp4
+          name: cinematic-3d-${{ inputs.render_length || 'preview' }}
+          path: motivational-video/out/*.mp4
           if-no-files-found: error
           retention-days: 14
