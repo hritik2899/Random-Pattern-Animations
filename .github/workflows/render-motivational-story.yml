@@ -56,8 +56,16 @@ jobs:
         if: github.event_name == 'push' || inputs.render_length != 'full'
         working-directory: motivational-video
         run: npm run preview
+      - name: Upload animated preview
+        if: github.event_name == 'push' || inputs.render_length != 'full'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinematic-3d-preview
+          path: motivational-video/out/cinematic-preview.mp4
+          if-no-files-found: error
+          retention-days: 14
       - name: Render full ten-minute animated film
-        if: github.event_name == 'workflow_dispatch' && inputs.render_length == 'full'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.render_length == 'full')
         working-directory: motivational-video
         run: npm run render
       - name: Inspect MP4 output
@@ -66,10 +74,11 @@ jobs:
           for video in motivational-video/out/*.mp4; do
             ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 "$video"
           done
-      - name: Upload MP4 artifact
+      - name: Upload complete 10-minute film
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.render_length == 'full')
         uses: actions/upload-artifact@v4
         with:
-          name: cinematic-3d-${{ inputs.render_length || 'preview' }}
-          path: motivational-video/out/*.mp4
+          name: cinematic-3d-full
+          path: motivational-video/out/cinematic-film-10min.mp4
           if-no-files-found: error
           retention-days: 14
