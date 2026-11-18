@@ -1,19 +1,24 @@
 {
-  "name": "one-hour-promise-video",
+  "name": "the-one-hour-promise-cinematic-3d",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "scripts": {
     "studio": "remotion studio src/index.tsx",
-    "render": "remotion render src/index.tsx MotivationalStory out/the-one-hour-promise.mp4 --codec h264 --concurrency 2 --crf 24"
+    "preview": "remotion render src/index.tsx CinematicPreview out/cinematic-preview.mp4 --codec h264 --concurrency 1 --crf 26",
+    "render": "remotion render src/index.tsx CinematicFilm out/cinematic-film-10min.mp4 --codec h264 --concurrency 1 --crf 26"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.0",
+    "@remotion/three": "^4.0.0",
+    "@react-three/fiber": "^8.17.0",
     "remotion": "^4.0.0",
+    "three": "^0.170.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
+    "@types/three": "^0.170.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0"
   }
